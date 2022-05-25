@@ -21,6 +21,8 @@ from cdlib import algorithms
 import collections
 from collections import defaultdict
 import csv
+
+
 '''
 种子扩展结合标签传播算法2-2（重叠）
 
@@ -35,8 +37,6 @@ import csv
 3. 社团合并
 
 '''
-
-
 
 def createGraph(filename):
     # 读取txt、out类型文件，建立图

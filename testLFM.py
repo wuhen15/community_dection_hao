@@ -13,6 +13,7 @@ from collections import defaultdict
 import csv
 
 
+
 class Community(object):
     """
     定义扩展的社区
