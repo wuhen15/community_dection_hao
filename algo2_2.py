@@ -206,7 +206,7 @@ if __name__ == '__main__':
         # # lfm(2009)
         res = algorithms.lfm(G, alpha=1)
         # # SLPA(2011)
-        # res = algorithms.slpa(G, t=21, r=0.1)
+        res = algorithms.slpa(G, t=21, r=0.1)
         # # demon(2012)
         # res = algorithms.demon(G, min_com_size=3, epsilon=0.25)
         # # ego-splitting(2017)

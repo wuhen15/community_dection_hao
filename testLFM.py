@@ -1,7 +1,7 @@
 import sys
 
-sys.path.append(
-    'D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code')
+# sys.path.append('D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code')
+# sys.path.append('D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code')
 import random
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ from util18ji.eq import ExtendQ
 import collections
 from collections import defaultdict
 import csv
-
+from cdlib import algorithms
 
 
 class Community(object):
@@ -105,6 +105,9 @@ class Community(object):
             neighbors.update(set(self._graph.neighbors(node)) - self._nodes)
         return neighbors
 
+    def get_fitness(self):
+        return float(self.k_in) / ((self.k_in + self.k_out) ** self.alpha)
+
 
 class LFM(object):
     def __init__(self, graph, alpha):
@@ -119,7 +122,7 @@ class LFM(object):
         # 划分的社团
         communities = []
         # 未扩展到的节点
-        node_not_include = self._graph.nodes()
+        node_not_include = list(self._graph.nodes())
 
         while len(node_not_include) != 0:
             c = Community(self._graph, self._alpha)
@@ -146,7 +149,7 @@ class LFM(object):
                 # 添加节点之后重新计算删除子社团中各个节点的适应度
                 to_be_remove = c.recalculate()
                 while to_be_remove is not None:
-                    c.remove_node(to_be_remove)
+                    c.remove_vertex(to_be_remove)
                     to_be_remove = c.recalculate()
 
                 to_be_examined = c.get_neighbors()
@@ -157,25 +160,28 @@ class LFM(object):
                     node_not_include.remove(node)
 
             # 返回已经完全扩展的社团
-            communities.append(c._nodes)
+            communities.append(list(c._nodes))
 
-        return communities
+        return list(communities)
 
 
 if (__name__ == "__main__"):
     # 重叠人工网络
     # 获取网络路径
-    name = "LFR2"
-    # list_mu = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    list_om = [2, 3, 4, 5, 6]
-    for om in list_om:
+    name = "LFR_work_data"
+    list_mu = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # list_om = [2, 3, 4, 5, 6]
+    list_om = [50, 500, 1000, 2000, 5000]
+    for om in list_mu:
     # mu = 0.6
+        print("mu:" + str(om))
         # 获取network路径
-        network_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(
-            om) + "/network.dat"
+        # network_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(om) + "/network.dat"
+        network_path = "/Users/swb/Desktop/community_dection/data/LFR_work_data/N=50" + "/mu=" + str(om) + "/network.dat"
         # 获取community路径
-        community_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(
-            om) + "/community.dat"
+        # community_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(om) + "/community.dat"
+        community_path = "/Users/swb/Desktop/community_dection/data/LFR_work_data/N=50" + "/mu=" + str(om) + "/community.dat"
+
         # 构建图
         G = nx.Graph()
         with open(network_path) as text:
@@ -183,7 +189,8 @@ if (__name__ == "__main__"):
             for line in reader:
                 source = int(line[0])
                 target = int(line[1])
-                G.add_edge(source, target)
+                G.add_edge(source, target) # The nodes source and target will be automatically added if they are not already in the graph.
+
         # 获取LFR真实社团划分（om不同）
         real_comms_dict = defaultdict(list)
         with open(community_path) as text:
@@ -200,10 +207,11 @@ if (__name__ == "__main__"):
 
         algorithm = LFM(G, 0.8)
         communities = algorithm.execute()
-
+        print(communities)
+        print(real_comm)
         # 计算NMI
         ovnmi = onmi(communities, real_comm)
-        # print("ovnmi：", ovnmi)
+        print("ovnmi：zijishixian", ovnmi)
         # 计算EQ
         # 获取边数
         edges_nums = len(nx.edges(G))
@@ -219,4 +227,13 @@ if (__name__ == "__main__"):
         eq = ExtendQ(G, communities, edges_nums, degree_dict, node_coms_num)
         # print("eq：", eq)
         # 输出onmi和eq
-        print(name + " om = " + str(om) + " ovNMI = " + str(ovnmi) + " EQ = " + str(eq))
+        # print(name + " om = " + str(om) + " ovNMI = " + str(ovnmi) + " EQ = " + str(eq))
+
+
+        commu = []
+        res = algorithms.lfm(G, alpha=0.8)
+        for nc in res.communities:
+            commu.append(nc)
+        ovnmi_2 = onmi(commu, real_comm)
+        print("ovnmi_2：xitong", ovnmi_2)
+        print("\n")
