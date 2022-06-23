@@ -1,17 +1,35 @@
-import sys
+# -*- coding: UTF-8 -*-
+"""
+使用空手道数据机karate_club_graph，传入LFM算法，得到communities
+构造图的方法有一点差异
+"""
 
-# sys.path.append('D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code')
-# sys.path.append('D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code')
+"""
+@summary: ＬＦＭ算法实现　种子传播算法
+@author: shaowenbin
+
+LFM算法首先定义出可以衡量一组节点连接紧密程度的适应度函数：Fitness，具体计算公式如下：
+    fg = kgin / (kgin+kgout)α
+
+其中 kgin：表示这些结点内部的度数，也就是内部边的２倍；
+    kgout：表示与外部结点相连的度数。一个社区由一组能够使fitness函数最大的结点组成
+    也就是再向这个社区中添加任何邻居结点都会使fitness减小。
+而一个结点对于这个社区的fitness定义如为包含这个结点的社区的fitness－不包含这个结点的社区的fitness差值：
+    fAg = fg+A − fg−A
+
+LFM算法主要由两个步骤构成：选取种子和拓展种子。
+    1.它随机地选择一个还没有被分配社区的结点作为种子，通过优化fitness函数的方法拓展它以形成一个社区。
+    2.根据适应度函数判断子社团的邻居节点是否可以加入到当前社团当中。
+    3.迭代这两步直到所有结点都属于至少一个社区为止。
+由于在拓展社区的时候，即使已经被分配社区的结点也可能被添加进来，所以LFM算法是可以发现重叠社区的。
+
+原文链接：https://blog.csdn.net/DreamHome_S/article/details/79849894
+"""
+
 import random
+# from cdlib import algorithms
 import networkx as nx
 import matplotlib.pyplot as plt
-import zipfile
-from util18ji.onmi import onmi
-from util18ji.eq import ExtendQ
-import collections
-from collections import defaultdict
-import csv
-from cdlib import algorithms
 
 
 class Community(object):
@@ -93,6 +111,10 @@ class Community(object):
         return new_fitness - old_fitness
 
     def recalculate(self):
+        """
+        添加节点之后重新计算删除子社团中各个节点的适应度
+        :return: node ：to_be_remove
+        """
         for vid in self._nodes:
             fitness = self.cal_remove_fitness(vid)
             if fitness < 0.0:
@@ -100,13 +122,14 @@ class Community(object):
         return None
 
     def get_neighbors(self):
+        """
+        返回当前社团的邻居节点
+        :return: node ： to_be_examined
+        """
         neighbors = set()
         for node in self._nodes:
             neighbors.update(set(self._graph.neighbors(node)) - self._nodes)
         return neighbors
-
-    def get_fitness(self):
-        return float(self.k_in) / ((self.k_in + self.k_out) ** self.alpha)
 
 
 class LFM(object):
@@ -117,7 +140,7 @@ class LFM(object):
     def execute(self):
         """
         种子扩展过程
-        :return:
+        :return: communities
         """
         # 划分的社团
         communities = []
@@ -128,8 +151,12 @@ class LFM(object):
             c = Community(self._graph, self._alpha)
             # 随机选择一个种子节点
             seed = random.choice(node_not_include)
+
             c.add_node(seed)
             to_be_examined = c.get_neighbors()
+            # print(seed)
+            # print(to_be_examined)
+
             # 测试邻居节点中需要扩展的节点
             while to_be_examined:
                 # 计算适应度最大的节点进行扩展
@@ -149,7 +176,7 @@ class LFM(object):
                 # 添加节点之后重新计算删除子社团中各个节点的适应度
                 to_be_remove = c.recalculate()
                 while to_be_remove is not None:
-                    c.remove_vertex(to_be_remove)
+                    c.remove_node(to_be_remove)
                     to_be_remove = c.recalculate()
 
                 to_be_examined = c.get_neighbors()
@@ -160,80 +187,33 @@ class LFM(object):
                     node_not_include.remove(node)
 
             # 返回已经完全扩展的社团
-            communities.append(list(c._nodes))
+            communities.append(c._nodes)
 
-        return list(communities)
-
-
-if (__name__ == "__main__"):
-    # 重叠人工网络
-    # 获取网络路径
-    name = "LFR_work_data"
-    list_mu = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    # list_om = [2, 3, 4, 5, 6]
-    list_om = [50, 500, 1000, 2000, 5000]
-    for om in list_mu:
-    # mu = 0.6
-        print("mu:" + str(om))
-        # 获取network路径
-        # network_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(om) + "/network.dat"
-        network_path = "/Users/swb/Desktop/community_dection/data/LFR_work_data/N=50" + "/mu=" + str(om) + "/network.dat"
-        # 获取community路径
-        # community_path = "D:/Desktop/huhao/mdnotebook/__overlapping__community detection/code/NetworkWithGroundTruth/LFR_algo2/" + name + "/om=" + str(om) + "/community.dat"
-        community_path = "/Users/swb/Desktop/community_dection/data/LFR_work_data/N=50" + "/mu=" + str(om) + "/community.dat"
-
-        # 构建图
-        G = nx.Graph()
-        with open(network_path) as text:
-            reader = csv.reader(text, delimiter="\t")
-            for line in reader:
-                source = int(line[0])
-                target = int(line[1])
-                G.add_edge(source, target) # The nodes source and target will be automatically added if they are not already in the graph.
-
-        # 获取LFR真实社团划分（om不同）
-        real_comms_dict = defaultdict(list)
-        with open(community_path) as text:
-            reader = csv.reader(text, delimiter="\t")
-            for line in reader:
-                node = int(line[0])
-                labels = line[-1].split()
-                for i in range(len(labels)):
-                    label = int(labels[i])
-                    real_comms_dict[label].append(node)
-        real_comm = []
-        for k, v in real_comms_dict.items():
-            real_comm.append(v)
-
-        algorithm = LFM(G, 0.8)
-        communities = algorithm.execute()
-        print(communities)
-        print(real_comm)
-        # 计算NMI
-        ovnmi = onmi(communities, real_comm)
-        print("ovnmi：zijishixian", ovnmi)
-        # 计算EQ
-        # 获取边数
-        edges_nums = len(nx.edges(G))
-        # 获取节点度
-        degree_dict = dict(nx.degree(G))
-        # 获取每个节点属于的社团数
-        node_coms_num = collections.defaultdict(int)
-        for node_id in G.nodes():
-            for comm in communities:
-                if node_id in comm:
-                    node_coms_num[node_id] += 1
-
-        eq = ExtendQ(G, communities, edges_nums, degree_dict, node_coms_num)
-        # print("eq：", eq)
-        # 输出onmi和eq
-        # print(name + " om = " + str(om) + " ovNMI = " + str(ovnmi) + " EQ = " + str(eq))
+        return communities
 
 
-        commu = []
-        res = algorithms.lfm(G, alpha=0.8)
-        for nc in res.communities:
-            commu.append(nc)
-        ovnmi_2 = onmi(commu, real_comm)
-        print("ovnmi_2：xitong", ovnmi_2)
-        print("\n")
+if __name__ == "__main__":
+    # path = "/home/dreamhome/network-datasets/karate/karate.paj"
+    # graph = get_graph.read_graph_from_file(path)
+    graph=nx.karate_club_graph()
+    # graph=graph.to_undirected()
+    # for i in range(len(graph.nodes)):
+    #     print(graph.nodes[i]['club'])
+    print(graph)
+    print(graph.nodes[30]['club'])
+    print(graph.nodes[30])
+
+    plt.subplot(1, 1, 1)
+    nx.draw(graph, with_labels=True)
+    plt.title('karate_club_graph')
+    plt.axis('on')
+    # plt.xticks([])
+    # plt.yticks([])
+
+    plt.show()
+
+    algorithm = LFM(graph, 0.8)
+    partitions = algorithm.execute()
+    print("输出社团划分结果：")
+    for i,c in enumerate(partitions):
+        print(i+1,sorted(c))
