@@ -100,6 +100,7 @@ print(bp.belief('b').get_distribution())
 # KinsDB需要一个Java版本的客户端，然后我开始这周先了解一下KinsDB
 # 后面梳理接口，提供一个向外暴露java接口的客户端。
 # 嗯，我这边就这个事情。
+# 还有一个就是HBase这边，工具，集群配置读取。
 
 # HBase KinsDB BlobStore OpenTSDB grafna
 
