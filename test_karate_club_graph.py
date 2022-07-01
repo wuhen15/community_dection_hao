@@ -191,6 +191,52 @@ class LFM(object):
 
         return communities
 
+"""
+//        Properties hbaseProperties = loadProperties("/all-hbase-site.xml");
+        Cluster cluster1 = HBaseUtil.getCluster(cluster);
+        String zkRoot = cluster1.getZkRoot();
+        String zkQuorum = cluster1.getZkQuorum();
+//        String parent = hbaseProperties.getProperty(cluster + ".zookeeper.znode.parent");
+//        String quorum = hbaseProperties.getProperty(cluster + ".hbase.zookeeper.quorum");
+//        String clientPort = hbaseProperties.getProperty(
+//                cluster + ".hbase.zookeeper.property.clientPort");
+        if (StringUtils.isBlank(zkRoot) || StringUtils.isBlank(zkQuorum)) {
+            LOG.error("empty hbase config for cluster : {}", cluster);
+            throw new IllegalArgumentIOException("empty hbase config for cluster : " + cluster);
+        }
+        conf.set("zookeeper.znode.parent", zkRoot);
+        conf.set("hbase.zookeeper.quorum", zkQuorum);
+        conf.set("hbase.zookeeper.property.clientPort", "2181");
+        
+        
+        //        Configuration conf = HBaseConfiguration.create();
+        Cluster cluster1 = HBaseUtil.getCluster(cluster);
+        Configuration conf = cluster1.getHDFSConfiguration();
+        addJobConf(conf);
+        Properties properties = loadProperties("/all-hdfs-site.xml");
+        String clusterAlias = properties.getProperty(cluster + ".nameservice.alias");
+        conf.set(DFS_NAMESERVICE_KEY, clusterAlias);
+        conf.set("fs.defaultFS", "hdfs://" + clusterAlias);
+        conf.set("dfs.client.failover.proxy.provider." + clusterAlias,
+                properties.getProperty("dfs.client.failover.proxy.provider." + cluster));
+        conf.set("dfs.ha.automatic-failover.enabled." + clusterAlias,
+                properties.getProperty("dfs.ha.automatic-failover.enabled." + cluster));
+        conf.set("dfs.ha.namenodes." + clusterAlias,
+                properties.getProperty("dfs.ha.namenodes." + cluster));
+        String[] nameNodes = properties.getProperty("dfs.ha.namenodes." + cluster).split(",");
+        for (String nameNode : nameNodes) {
+            conf.set("dfs.namenode.rpc-address." + clusterAlias + "." + nameNode,
+                    properties.getProperty("dfs.namenode.rpc-address." + cluster + "." + nameNode));
+            conf.set("dfs.namenode.servicerpc-address." + clusterAlias + "." + nameNode,
+                    properties.getProperty("dfs.namenode.servicerpc-address." + cluster + "." + nameNode));
+            conf.set("dfs.namenode.http-address." + clusterAlias + "." + nameNode,
+                    properties.getProperty("dfs.namenode.http-address." + cluster + "." + nameNode));
+            conf.set("dfs.namenode.https-address." + clusterAlias + "." + nameNode,
+                    properties.getProperty("dfs.namenode.https-address." + cluster + "." + nameNode));
+        }
+        loadLocalHbaseResource(conf, cluster);
+        return conf;
+"""
 
 if __name__ == "__main__":
     # path = "/home/dreamhome/network-datasets/karate/karate.paj"
